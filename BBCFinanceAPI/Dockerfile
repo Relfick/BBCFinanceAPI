@@ -5,10 +5,10 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["BBCFinanceAPI.csproj", "./"]
-RUN dotnet restore "BBCFinanceAPI.csproj"
+COPY ["BBCFinanceAPI/BBCFinanceAPI.csproj", "BBCFinanceAPI/"]
+RUN dotnet restore "BBCFinanceAPI/BBCFinanceAPI.csproj"
 COPY . .
-WORKDIR "/src/"
+WORKDIR "/src/BBCFinanceAPI"
 RUN dotnet build "BBCFinanceAPI.csproj" -c Release -o /app/build
 
 FROM build AS publish
