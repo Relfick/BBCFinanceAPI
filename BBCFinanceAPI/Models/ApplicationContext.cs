@@ -28,6 +28,7 @@ public sealed class ApplicationContext: DbContext
         builder.Property(u => u.Id).HasColumnName("id");
         builder.Property(u => u.FirstName).HasColumnName("first_name");
         builder.Property(u => u.Username).HasColumnName("username");
+        builder.Property(u => u.WorkMode).HasColumnName("workmode");
     }
     
     private void ExpenseConfigure(EntityTypeBuilder<Expense> builder)
