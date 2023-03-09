@@ -13,6 +13,7 @@ public sealed class ApplicationContext: DbContext
     public ApplicationContext(DbContextOptions<ApplicationContext> options) 
         : base(options)
     {
+        // Database.EnsureDeleted();
         Database.EnsureCreated();
     }
 
@@ -36,15 +37,27 @@ public sealed class ApplicationContext: DbContext
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.UserId).HasColumnName("user_id");
         builder.Property(e=> e.Name).HasColumnName("name");
-        builder.Property(e=> e.ExpenseCategory).HasColumnName("expense_category");
+        builder.Property(e=> e.ExpenseCategoryId).HasColumnName("expense_category_id");
         builder.Property(e=> e.Cost).HasColumnName("cost");
         builder.Property(e=> e.Date).HasColumnName("date");
+        builder
+            .HasOne<ExpenseCategory>()
+            .WithMany()
+            .HasForeignKey(e => e.ExpenseCategoryId);
+        builder
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(e => e.UserId);
     }
     
     private void ExpenseCategoryConfigure(EntityTypeBuilder<ExpenseCategory> builder)
     {
         builder.Property(c => c.Id).HasColumnName("id");
         builder.Property(c => c.UserId).HasColumnName("user_id");
-        builder.Property(c=> c.Category).HasColumnName("expense_category");
+        builder.Property(c=> c.Name).HasColumnName("expense_category");
+        builder
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(ec => ec.UserId);
     }
 }
