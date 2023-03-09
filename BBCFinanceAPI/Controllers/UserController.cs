@@ -1,15 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using BBCFinanceAPI.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BBCFinanceAPI.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
 
 namespace BBCFinanceAPI.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class UserController : ControllerBase
 {
@@ -41,21 +47,32 @@ public class UserController : ControllerBase
     
     // POST: api/User
     [HttpPost]
-    public async Task<ActionResult<User>> PostUser(User user)
+    [AllowAnonymous]
+    public async Task<string> RegisterUser(User user)
     {
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        return CreatedAtAction(
-            nameof(GetUser),
-            new
-            {
-                id = user.Id,
-                first_name = user.FirstName,
-                username = user.Username,
-                workMode = user.WorkMode
-            },
-            user);
+        var claims = new List<Claim> { new(ClaimTypes.Name, user.Id.ToString()) };
+        var jwt = new JwtSecurityToken(
+            issuer: AuthOptions.ISSUER,
+            audience: AuthOptions.AUDIENCE,
+            claims: claims,
+            signingCredentials: new SigningCredentials(
+                AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
+        
+        return new JwtSecurityTokenHandler().WriteToken(jwt);
+        
+        // return CreatedAtAction(
+        //     nameof(GetUser),
+        //     new
+        //     {
+        //         id = user.Id,
+        //         first_name = user.FirstName,
+        //         username = user.Username,
+        //         workMode = user.WorkMode
+        //     },
+        //     user);
     }
     
     // PUT: api/User/5
@@ -135,4 +152,13 @@ public class UserController : ControllerBase
         var user = _db.Users.Find(id);
         return user != null;
     }
+    
+    private long? GetTgUserId()
+    {
+        var identity = ControllerContext.HttpContext.User.Identity;
+        if (identity == null)
+            return null;
+        var id = long.Parse(identity.Name!);
+        return id;
+    } 
 }

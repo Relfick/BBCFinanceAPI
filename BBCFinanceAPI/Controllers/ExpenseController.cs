@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BBCFinanceAPI.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BBCFinanceAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class ExpenseController : ControllerBase
 {
     private readonly ApplicationContext _db;
@@ -107,5 +109,14 @@ public class ExpenseController : ControllerBase
     {
         var expense = _db.Expenses.Find(id);
         return expense != null;
+    }
+    
+    private long? GetTgUserId()
+    {
+        var identity = ControllerContext.HttpContext.User.Identity;
+        if (identity == null)
+            return null;
+        var id = long.Parse(identity.Name!);
+        return id;
     }
 }

@@ -6,29 +6,35 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BBCFinanceAPI.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BBCFinanceAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class ExpenseCategoryController : ControllerBase
 {
     private readonly ApplicationContext _db;
+    // private readonly long _tgUserId;
 
     public ExpenseCategoryController(ApplicationContext db)
     {
         _db = db;
     }
-
+    
     // GET: api/ExpenseCategory
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ExpenseCategory>>> GetExpenseCategories()
     {
         if (_db.ExpenseCategories == null)
-        {
             return NotFound();
-        }
-        return await _db.ExpenseCategories.ToListAsync();
+
+        var tgUserId = GetTgUserId();
+        if (tgUserId == null)
+            return Unauthorized();
+        
+        return await _db.ExpenseCategories.Where(ec => ec.UserId == tgUserId).ToListAsync();
     }
 
     // GET: api/ExpenseCategory/5/
@@ -119,4 +125,14 @@ public class ExpenseCategoryController : ControllerBase
         var expenseCategory = _db.ExpenseCategories.Find(id);
         return expenseCategory != null;
     }
+
+    private long? GetTgUserId()
+    {
+        var identity = ControllerContext.HttpContext.User.Identity;
+        if (identity == null)
+            return null;
+        var id = long.Parse(identity.Name!);
+        return id;
+    }
+    
 }
