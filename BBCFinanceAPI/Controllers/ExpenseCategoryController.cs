@@ -11,18 +11,18 @@ namespace BBCFinanceAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class UserExpenseCategoryController : ControllerBase
+public class ExpenseCategoryController : ControllerBase
 {
     private readonly ApplicationContext _db;
 
-    public UserExpenseCategoryController(ApplicationContext db)
+    public ExpenseCategoryController(ApplicationContext db)
     {
         _db = db;
     }
 
-    // GET: api/UserExpenseCategory
+    // GET: api/ExpenseCategory
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ExpenseCategory>>> GetUserExpenseCategories()
+    public async Task<ActionResult<IEnumerable<ExpenseCategory>>> GetExpenseCategories()
     {
         if (_db.ExpenseCategories == null)
         {
@@ -30,57 +30,53 @@ public class UserExpenseCategoryController : ControllerBase
         }
         return await _db.ExpenseCategories.ToListAsync();
     }
-        
-    // GET: api/UserExpenseCategory/5/еда/
-    [HttpGet("{userId}/{expenseCategory}")]
-    public async Task<ActionResult<ExpenseCategory>> GetUserExpenseCategory(long userId, string expenseCategory)
+
+    // GET: api/ExpenseCategory/5/
+    [HttpGet("{id}")]
+    public async Task<ActionResult<ExpenseCategory>> GetExpenseCategory(int id)
     {
-        // TODO: Проверить
-        var userExpenseCategory = await _db.ExpenseCategories.FirstOrDefaultAsync(e => e.UserId == userId && e.Category == expenseCategory);
-        if (userExpenseCategory == null)
+        if (_db.ExpenseCategories == null)
             return NotFound();
 
-        return userExpenseCategory;
+        var category = await _db.ExpenseCategories.FindAsync(id);
+        if (category == null)
+            return NotFound();
+        
+        return category;
     }
-
-    // GET: api/UserExpenseCategory/5/
-    [HttpGet("{userId}")]
-    public async Task<ActionResult<List<string>>> GetUserExpenseCategories(long userId)
+    
+    // POST: api/ExpenseCategory
+    [HttpPost]
+    public async Task<ActionResult<ExpenseCategory>> PostExpenseCategory(ExpenseCategory expenseCategory)
     {
         if (_db.ExpenseCategories == null)
         {
-            return NotFound();
+            return Problem("Entity set 'ApplicationContext.UserExpenseCategories'  is null.");
         }
+        _db.ExpenseCategories.Add(expenseCategory);
+        await _db.SaveChangesAsync();
 
-        var categories = await _db.ExpenseCategories.Where(user => user.UserId == userId)
-            .Select(c => c.Category)
-            .ToListAsync();
-        return categories;
+        return CreatedAtAction(
+            nameof(GetExpenseCategory), 
+            new
+            {
+                id = expenseCategory.Id,  
+                userId = expenseCategory.UserId, 
+                name = expenseCategory.Name
+            },
+            expenseCategory);
     }
-
-    // PUT: api/UserExpenseCategory/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{userId}")]
-    public async Task<IActionResult> PutUserExpenseCategory(long userId, Dictionary<string, string> categoriesDictionary)
+    
+    // PUT: api/ExpenseCategory/5
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutExpenseCategory(int id, ExpenseCategory newExpenseCategory)
     {
-        var oldCategory = categoriesDictionary["oldCategory"];
-        var newCategory = categoriesDictionary["newCategory"];
-        
-        var oldUserExpenseCategory = await _db.ExpenseCategories.FirstOrDefaultAsync(
-            u => u.UserId == userId && u.Category == oldCategory);
-        if (oldUserExpenseCategory == null)
-            return NotFound();
-        
-        oldUserExpenseCategory.Category = newCategory;
-
-        var userExpenses = await _db.Expenses
-            .Where(ue => ue.UserId == userId && ue.ExpenseCategory == oldCategory)
-            .ToListAsync();
-        
-        foreach (var ue in userExpenses)
+        if (id != newExpenseCategory.Id)
         {
-            ue.ExpenseCategory = newCategory;
+            return BadRequest("Id mismatch!");
         }
+
+        _db.Entry(newExpenseCategory).State = EntityState.Modified;
         
         try
         {
@@ -88,59 +84,39 @@ public class UserExpenseCategoryController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!UserExpenseCategoryExists(userId))
+            if (!ExpenseCategoryExists(id))
+            {
                 return NotFound();
-
-            throw;
+            }
+            else
+            {
+                throw;
+            }
         }
 
         return NoContent();
     }
-
-    // POST: api/UserExpenseCategory
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPost]
-    public async Task<ActionResult<ExpenseCategory>> PostUserExpenseCategory(ExpenseCategory userExpenseCategory)
+    
+    // DELETE: api/UserExpenseCategory/5
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteUserExpenseCategory(int id)
     {
         if (_db.ExpenseCategories == null)
-        {
-            return Problem("Entity set 'ApplicationContext.UserExpenseCategories'  is null.");
-        }
-        _db.ExpenseCategories.Add(userExpenseCategory);
-        await _db.SaveChangesAsync();
-
-        // return CreatedAtAction("GetUserExpenseCategory", new { id = userExpenseCategory.Id }, userExpenseCategory);
-        return NoContent();
-    }
-
-    // DELETE: api/UserExpenseCategory/5/food
-    [HttpDelete("{userId}/{category}")]
-    public async Task<IActionResult> DeleteUserExpenseCategory(long userId, string category)
-    {
-        if (_db.ExpenseCategories == null)
-        {
             return NotFound();
-        }
-        
-        var userExpenseCategory = await _db.ExpenseCategories.FirstOrDefaultAsync(u => u.UserId == userId && u.Category == category);
-        if (userExpenseCategory == null)
+
+        var expenseCategory = await _db.ExpenseCategories.FindAsync(id);
+        if (expenseCategory == null)
             return NotFound();
         
-        var userExpensesWithCategory = await _db.Expenses
-            .Where(e => e.UserId == userId && e.ExpenseCategory == category)
-            .ToListAsync();
-
-        _db.ExpenseCategories.Remove(userExpenseCategory);
-        _db.Expenses.RemoveRange(userExpensesWithCategory);
-        
+        _db.ExpenseCategories.Remove(expenseCategory);
         await _db.SaveChangesAsync();
 
         return NoContent();
     }
     
-    private bool UserExpenseCategoryExists(long id)
+    private bool ExpenseCategoryExists(int id)
     {
-        return (_db.ExpenseCategories?.Any(e => e.Id == id)).GetValueOrDefault();
+        var expenseCategory = _db.ExpenseCategories.Find(id);
+        return expenseCategory != null;
     }
-
 }

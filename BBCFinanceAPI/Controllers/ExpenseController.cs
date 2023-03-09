@@ -24,53 +24,48 @@ public class ExpenseController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Expense>>> GetExpenses()
     {
-        if (_db.Expenses == null)
-        {
-            return NotFound();
-        }
         return await _db.Expenses.ToListAsync();
     }
 
     // GET: api/Expense/5
-    [HttpGet("{tgUserId}")]
-    public async Task<ActionResult<List<Expense>>> GetExpenses(long tgUserId)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Expense>> GetExpense(int id)
     {
-        if (_db.Expenses == null)
-        {
+        var expense = await _db.Expenses.FindAsync(id);
+        if (expense == null)
             return NotFound();
-        }
         
-        List<Expense> expenses = await _db.Expenses
-            .Where(u => u.UserId == tgUserId)
-            .ToListAsync();
-
-        return expenses;
+        return expense;
     }
 
-    // GET: api/Expense/5/food
-    [HttpGet("{tgUserId}/{category}")]
-    public async Task<ActionResult<List<Expense>>> GetExpensesWithCategory(long tgUserId, string category)
+    // POST: api/Expense
+    [HttpPost]
+    public async Task<ActionResult<Expense>> PostExpense(Expense expense)
     {
-        if (_db.Expenses == null)
-        {
-            return NotFound();
-        }
-        
-        List<Expense> expenses = await _db.Expenses
-            .Where(u => u.UserId == tgUserId && u.ExpenseCategory == category)
-            .ToListAsync();
+        _db.Expenses.Add(expense);
+        await _db.SaveChangesAsync();
 
-        return expenses; 
+        return CreatedAtAction(
+            nameof(GetExpense),
+            new
+            {
+                id = expense.Id,
+                expenseCategoryId = expense.ExpenseCategoryId,
+                cost = expense.Cost,
+                userId = expense.UserId,
+                name = expense.Name,
+                date = expense.Date
+            },
+            expense);
     }
-
+    
     // PUT: api/Expense/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
     public async Task<IActionResult> PutExpense(int id, Expense expense)
     {
         if (id != expense.Id)
         {
-            return BadRequest();
+            return BadRequest("Id mismatch!");
         }
 
         _db.Entry(expense).State = EntityState.Modified;
@@ -93,38 +88,14 @@ public class ExpenseController : ControllerBase
 
         return NoContent();
     }
-
-    // POST: api/Expense
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPost]
-    // TODO: [ServiceFilter(typeof(ValidationFilterAttribute))]
-    public async Task<ActionResult<Expense>> PostExpense([FromBody] Expense expense)
-    {
-        if (_db.Expenses == null)
-        {
-            return Problem("Entity set 'ApplicationContext.Expenses' is null.");
-        }
-
-        _db.Expenses.Add(expense);
-        await _db.SaveChangesAsync();
-
-        // return CreatedAtAction("GetExpenses", new { id = expense.Id }, expense);
-        return NoContent();
-    }
-
+    
     // DELETE: api/Expense/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteExpense(int id)
     {
-        if (_db.Expenses == null)
-        {
-            return NotFound();
-        }
         var expense = await _db.Expenses.FindAsync(id);
         if (expense == null)
-        {
             return NotFound();
-        }
 
         _db.Expenses.Remove(expense);
         await _db.SaveChangesAsync();
@@ -134,6 +105,7 @@ public class ExpenseController : ControllerBase
 
     private bool ExpenseExists(int id)
     {
-        return (_db.Expenses?.Any(e => e.Id == id)).GetValueOrDefault();
+        var expense = _db.Expenses.Find(id);
+        return expense != null;
     }
 }

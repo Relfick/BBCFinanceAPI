@@ -24,36 +24,47 @@ public class UserController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<User>>> GetUsers()
     {
-        if (_db.Users == null)
-        {
-            return NotFound();
-        }
         return await _db.Users.ToListAsync();
     }
     
     // GET: api/User/5
-    [HttpGet("{tgUserId}")]
-    public async Task<ActionResult<User>> GetUser(long tgUserId)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<User>> GetUser(long id)
     {
-        if (_db.Users == null)
-            return NotFound();
-
-        var user = await _db.Users.FindAsync(tgUserId);
+        var user = await _db.Users.FindAsync(id);
 
         if (user == null)
             return NotFound();
 
         return user;
     }
-
-    // PUT: api/User/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{tgUserId}")]
-    public async Task<IActionResult> PutUser(long tgUserId, User user)
+    
+    // POST: api/User
+    [HttpPost]
+    public async Task<ActionResult<User>> PostUser(User user)
     {
-        if (tgUserId != user.Id)
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync();
+
+        return CreatedAtAction(
+            nameof(GetUser),
+            new
+            {
+                id = user.Id,
+                first_name = user.FirstName,
+                username = user.Username,
+                workMode = user.WorkMode
+            },
+            user);
+    }
+    
+    // PUT: api/User/5
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutUser(long id, User user)
+    {
+        if (id != user.Id)
         {
-            return BadRequest();
+            return BadRequest("Id mismatch!");
         }
 
         _db.Entry(user).State = EntityState.Modified;
@@ -64,7 +75,7 @@ public class UserController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!UserExists(tgUserId))
+            if (!UserExists(id))
             {
                 return NotFound();
             }
@@ -77,10 +88,11 @@ public class UserController : ControllerBase
         return NoContent();
     }
     
-    [HttpPut("workmode/{tgUserId}")]
-    public async Task<IActionResult> PutWorkMode(long tgUserId, [FromBody] UserWorkMode workMode)
+    // PUT: api/User/workmode/5
+    [HttpPut("workmode/{id}")]
+    public async Task<IActionResult> SetWorkMode(long id, [FromBody] UserWorkMode workMode)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == tgUserId);
+        var user = await _db.Users.FindAsync(id);
         if (user == null)
             return NotFound();
 
@@ -91,7 +103,7 @@ public class UserController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!UserExists(tgUserId))
+            if (!UserExists(id))
             {
                 return NotFound();
             }
@@ -103,36 +115,14 @@ public class UserController : ControllerBase
 
         return NoContent();
     }
-    
-    // POST: api/User
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPost]
-    public async Task<ActionResult<User>> PostUser(User user)
-    {
-        if (_db.Users == null)
-        {
-            return Problem("Entity set 'ApplicationContext.Users'  is null.");
-        }
-        _db.Users.Add(user);
-        await _db.SaveChangesAsync();
-
-        // return CreatedAtAction("GetUser", new { id = user.Id }, user);
-        return NoContent();
-    }
 
     // DELETE: api/User/5
-    [HttpDelete("{tgUserId}")]
-    public async Task<IActionResult> DeleteUser(long tgUserId)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteUser(long id)
     {
-        if (_db.Users == null)
-        {
-            return NotFound();
-        }
-        var user = await _db.Users.FindAsync(tgUserId);
+        var user = await _db.Users.FindAsync(id);
         if (user == null)
-        {
             return NotFound();
-        }
 
         _db.Users.Remove(user);
         await _db.SaveChangesAsync();
@@ -140,8 +130,9 @@ public class UserController : ControllerBase
         return NoContent();
     }
 
-    private bool UserExists(long tgUserId)
+    private bool UserExists(long id)
     {
-        return (_db.Users?.Any(e => e.Id == tgUserId)).GetValueOrDefault();
+        var user = _db.Users.Find(id);
+        return user != null;
     }
 }
