@@ -16,7 +16,6 @@ namespace BBCFinanceAPI.Controllers;
 public class ExpenseCategoryController : ControllerBase
 {
     private readonly ApplicationContext _db;
-    // private readonly long _tgUserId;
 
     public ExpenseCategoryController(ApplicationContext db)
     {
