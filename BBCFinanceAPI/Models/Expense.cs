@@ -1,28 +1,32 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace BBCFinanceAPI.Models;
 
 public class Expense
 {
-    public int Id { get; set; }
+    public long Id { get; set; }
     
     [Required]
     public long UserId { get; set; }
     
     [Required]
-    public int ExpenseCategoryId { get; set; }
+    public long ExpenseCategoryId { get; set; }
+    [JsonIgnore]
+    public ExpenseCategory? ExpenseCategory { get; set; }
     
-    [MaxLength(5, ErrorMessage = "Название траты должно быть не больше 5 символов")]
+    [Required]
+    [MaxLength(20, ErrorMessage = "Название траты должно быть не больше 20 символов")]
     public string Name { get; set; }
     
-    [Range(1, 100, ErrorMessage = "Стоимость должна быть не более 100")]
+    [Range(1, 10000000, ErrorMessage = "Стоимость должна быть не более 1 млн")]
     [Required]
     public int Cost { get; set; }
     
     [Required]
     public DateTime Date { get; set; }
     
-    public Expense(long userId, string name, int cost, int expenseCategoryId, DateTime date)
+    public Expense(long userId, string name, int cost, long expenseCategoryId, DateTime date)
     {
         UserId = userId;
         Name = name;

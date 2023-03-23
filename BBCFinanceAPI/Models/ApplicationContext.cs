@@ -41,7 +41,7 @@ public sealed class ApplicationContext: DbContext
         builder.Property(e=> e.Cost).HasColumnName("cost");
         builder.Property(e=> e.Date).HasColumnName("date");
         builder
-            .HasOne<ExpenseCategory>()
+            .HasOne<ExpenseCategory>(e => e.ExpenseCategory)
             .WithMany()
             .HasForeignKey(e => e.ExpenseCategoryId);
         builder
