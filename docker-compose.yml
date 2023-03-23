@@ -1,0 +1,23 @@
+services:
+  db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: finance_db
+    volumes:
+      - mysql-data:/var/lib/mysql
+  app:
+    build: 
+      dockerfile: ./BBCFinanceAPI/Dockerfile
+    ports:
+      - 5000:80
+    depends_on:
+      - db
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DB: finance_db
+volumes:
+  mysql-data:
